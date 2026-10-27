@@ -1,32 +1,23 @@
 import os
 import time
 import random
-import threading
 import re
 from collections import deque
-from flask import Flask
 from dotenv import load_dotenv
 from instagrapi import Client
 from openai import OpenAI
 
 load_dotenv()
 
-app = Flask(__name__)
-
-@app.route('/')
-def home():
-    return "Pravin AI is alive and cooking!", 200
-
 USERNAME = os.getenv("INSTAGRAM_USERNAME")
 PASSWORD = os.getenv("INSTAGRAM_PASSWORD")
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 
-BOT_TAG = "@pravinai2"  # Exact handle tag to trigger the bot
-CHECK_INTERVAL = 5      # Speed up check times for faster execution
+BOT_TAG = "@pravinai2"  
+CHECK_INTERVAL = 5      
 MAX_TOKENS = 250
-MODEL = "llama-3.1-8b-instant"  # Changed to the instant model tier for rapid response delivery
+MODEL = "llama-3.1-8b-instant"  
 
-# ---------- THE BRAIN ----------
 SYSTEM_PROMPT = """You are Pravin AI, the resident AI in an Instagram group chat. You are opinionated and blunt.
 
 HARD RULES:
@@ -43,13 +34,11 @@ ALLOWED / ENCOURAGED:
 STYLE:
 - Keep it SHORT. Instagram DM energy. 1-3 sentences usually.
 - Talk like a sharp friend, not a customer service bot.
-- Match the language the user writes in (Hindi, English, Hinglish, whatever).
-- If you don't know something, say so in one line and move on."""
+- Match the language the user writes in (Hindi, English, Hinglish, whatever)."""
 
 cl = Client()
+# Fixed API endpoint format
 ai_client = OpenAI(base_url="https://groq.com", api_key=GROQ_API_KEY)
-
-# Remembers recent message IDs so we never double-reply
 replied_ids = deque(maxlen=300)
 
 def login_to_instagram():
@@ -63,7 +52,7 @@ def login_to_instagram():
                 print("Saved session invalid, performing fresh login.")
         cl.login(USERNAME, PASSWORD)
         cl.dump_settings("session.json")
-        print("Successfully logged in!")
+        print("Successfully logged in to Instagram!")
     except Exception as e:
         print(f"Login failed: {e}")
         exit(1)
@@ -79,11 +68,10 @@ def get_ai_response(prompt):
             temperature=0.9,
             max_tokens=MAX_TOKENS,
         )
-        # Fixed attributes crash bug: Use proper dot-property chain extraction
         return response.choices[0].message.content.strip()
     except Exception as e:
         print(f"Cloud AI Error: {e}")
-        return "Can't answer that one, too crazy even for me."
+        return "Can't answer that one right now."
 
 def check_and_reply():
     threads = cl.direct_threads(amount=5)
@@ -91,24 +79,16 @@ def check_and_reply():
         if not thread.messages:
             continue
 
-        # Get the absolute newest message in the array regardless of sorting
         last_message = max(thread.messages, key=lambda m: m.timestamp)
 
-        if not last_message.text:
+        if not last_message.text or last_message.user_id == cl.user_id:
             continue
-        # Don't reply to yourself
-        if last_message.user_id == cl.user_id:
-            continue
-        # Already handled this specific message ID
         if last_message.id in replied_ids:
             continue
-        # Case-insensitive verification check for tags
         if BOT_TAG.lower() not in last_message.text.lower():
             continue
 
         print(f"Ping detected: '{last_message.text}'")
-        
-        # Clean the prompt safely across any mixed casing configurations
         clean_prompt = re.sub(re.escape(BOT_TAG), "", last_message.text, flags=re.IGNORECASE).strip()
         if not clean_prompt:
             clean_prompt = "Say hi."
@@ -116,21 +96,14 @@ def check_and_reply():
         reply_text = get_ai_response(clean_prompt)
         cl.direct_send(reply_text, thread_ids=[thread.id])
         print(f"Replied: {reply_text}")
-
         replied_ids.append(last_message.id)
 
-def bot_loop():
+if __name__ == "__main__":
     login_to_instagram()
-    print(f"Pravin AI loop started. Listening for {BOT_TAG}...")
+    print(f"Pravin AI is online. Listening for {BOT_TAG}...")
     while True:
         try:
             check_and_reply()
         except Exception as e:
             print(f"Error during polling loop: {e}")
-        # Fast running loop timing window configuration
         time.sleep(CHECK_INTERVAL + random.uniform(1, 2))
-
-if __name__ == "__main__":
-    threading.Thread(target=bot_loop, daemon=True).start()
-    port = int(os.environ.get("PORT", 5000))
-    app.run(host="0.0.0.0", port=port)
