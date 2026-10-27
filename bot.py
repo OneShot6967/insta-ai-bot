@@ -50,12 +50,18 @@ def login_to_instagram():
                 print("Loaded saved session data.")
             except Exception:
                 print("Saved session invalid, performing fresh login.")
+        
+        # Add these two lines to bypass the "out of date" login block:
+        cl.set_app_version("316.0.0.38.109")
+        cl.set_locale("en_US")
+        
         cl.login(USERNAME, PASSWORD)
         cl.dump_settings("session.json")
         print("Successfully logged in to Instagram!")
     except Exception as e:
         print(f"Login failed: {e}")
         exit(1)
+
 
 def get_ai_response(prompt):
     try:
