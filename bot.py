@@ -129,33 +129,37 @@ def remember_message(message_id):
     save_replied_ids()
 
 
+
 def login_to_instagram():
-    """Load saved settings when available and authenticate."""
+    """Diagnose saved-session availability and authenticate."""
     logger.info("Connecting to Instagram...")
+    logger.info("Session file path: %s", SESSION_FILE.resolve())
+    logger.info("Saved session exists: %s", SESSION_FILE.is_file())
+
+    if SESSION_FILE.is_file():
+        try:
+            cl.load_settings(str(SESSION_FILE))
+            logger.info("Saved session settings loaded.")
+        except Exception as exc:
+            logger.warning(
+                "Could not load saved session. Error type: %s",
+                type(exc).__name__,
+            )
 
     try:
-        if SESSION_FILE.exists():
-            try:
-                cl.load_settings(str(SESSION_FILE))
-                logger.info("Loaded saved Instagram session settings.")
-            except Exception as exc:
-                logger.warning("Saved session could not be loaded: %s", exc)
-
-        # The library validates saved settings and can refresh an invalid
-        # session using the supplied credentials.
         cl.login(USERNAME, PASSWORD)
         cl.dump_settings(str(SESSION_FILE))
-
-        logger.info("Instagram login successful.")
+        logger.info("Instagram login successful; session saved.")
         return True
 
-    except Exception:
-        logger.exception(
-            "Instagram login failed. Check the error above. "
-            "Do not repeatedly retry rejected logins."
+    except Exception as exc:
+        # Log the error type, not credentials or session contents.
+        logger.error(
+            "Instagram login failed. Error type: %s; details: %s",
+            type(exc).__name__,
+            str(exc)[:500],
         )
         return False
-
 
 def get_ai_response(prompt):
     """Generate a short response using Groq."""
