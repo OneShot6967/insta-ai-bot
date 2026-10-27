@@ -22,7 +22,7 @@ USERNAME = os.getenv("INSTAGRAM_USERNAME")
 PASSWORD = os.getenv("INSTAGRAM_PASSWORD")
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 
-BOT_TAG = "@your_bot_username"      # exact handle tag to trigger the bot
+BOT_TAG = "@pravinai2"      # exact handle tag to trigger the bot
 CHECK_INTERVAL = 20
 MAX_TOKENS = 250
 MODEL = "llama-3.3-70b-versatile"   # or "llama-3.1-8b-instant" for speed
