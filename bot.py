@@ -83,7 +83,7 @@ def get_ai_response(prompt):
             temperature=0.9,   # higher = more personality, less robot
             max_tokens=MAX_TOKENS,
         )
-        return response.choices[0].message.content.strip()
+        return response.choices[0].message.content
     except Exception as e:
         print(f"Cloud AI Error: {e}")
         return "Sorry, I ran into an error processing that request."
