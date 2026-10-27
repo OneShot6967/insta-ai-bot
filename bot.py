@@ -51,9 +51,10 @@ def login_to_instagram():
             except Exception:
                 print("Saved session invalid, performing fresh login.")
         
-        # Add these two lines to bypass the "out of date" login block:
-        cl.set_app_version("316.0.0.38.109")
-        cl.set_locale("en_US")
+        # Corrected method to override the application headers and version parameters
+        cl.private.headers.update({
+            "User-Agent": "Instagram 316.0.0.38.109 Android (33/13; 480dpi; 1080x2280; Xiaomi; Redmi Note 7 Pro; violet; qcom; en_US; 560124373)"
+        })
         
         cl.login(USERNAME, PASSWORD)
         cl.dump_settings("session.json")
@@ -61,7 +62,6 @@ def login_to_instagram():
     except Exception as e:
         print(f"Login failed: {e}")
         exit(1)
-
 
 def get_ai_response(prompt):
     try:
